@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
+  <implementationId>${mistral-ocr-extract-fields.impl.id}</implementationId>
+  <implementationVersion>${mistral-ocr-extract-fields.impl.version}</implementationVersion>
+  <definitionId>${mistral-ocr-extract-fields.def.id}</definitionId>
+  <definitionVersion>${mistral-ocr-extract-fields.def.version}</definitionVersion>
+  <implementationClassname>${mistral-ocr-extract-fields.main-class}</implementationClassname>
+  <hasSources>false</hasSources>
+  <description>Mistral OCR Extract Fields connector implementation</description>
+
+<!-- retrieved from the pom.xml at build time -->
+${connector-dependencies}
+
+</implementation:connectorImplementation>

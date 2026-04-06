@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definition:ConnectorDefinition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:definition="http://www.bonitasoft.org/ns/connector/definition/6.1">
+  <id>${mistral-ocr-extract-fields.def.id}</id>
+  <version>${mistral-ocr-extract-fields.def.version}</version>
+  <icon>mistral-ocr.png</icon>
+  <category icon="mistral-ocr.png" id="Mistral OCR"/>
+
+  <!-- Connection inputs -->
+  <input name="apiKey" type="java.lang.String" mandatory="true"/>
+  <input name="baseUrl" type="java.lang.String" mandatory="false" defaultValue="https://api.mistral.ai/v1"/>
+  <input name="model" type="java.lang.String" mandatory="false" defaultValue="pixtral-large-latest"/>
+  <input name="connectTimeout" type="java.lang.Integer" mandatory="false" defaultValue="30000"/>
+  <input name="readTimeout" type="java.lang.Integer" mandatory="false" defaultValue="120000"/>
+
+  <!-- Document inputs -->
+  <input name="documentBase64" type="java.lang.String" mandatory="false"/>
+  <input name="imageUrl" type="java.lang.String" mandatory="false"/>
+  <input name="mimeType" type="java.lang.String" mandatory="false" defaultValue="application/pdf"/>
+
+  <!-- Operation-specific inputs -->
+  <input name="fieldsSchema" type="java.lang.String" mandatory="true"/>
+  <input name="extractionPrompt" type="java.lang.String" mandatory="false"/>
+  <input name="strictMode" type="java.lang.Boolean" mandatory="false" defaultValue="false"/>
+
+  <!-- Outputs -->
+  <output name="extractedFields" type="java.lang.String"/>
+  <output name="extractedFieldsMap" type="java.util.Map"/>
+  <output name="fieldCount" type="java.lang.Integer"/>
+  <output name="confidence" type="java.lang.Double"/>
+  <output name="tokensUsed" type="java.lang.Integer"/>
+  <output name="success" type="java.lang.Boolean"/>
+  <output name="errorMessage" type="java.lang.String"/>
+
+  <!-- UI Pages -->
+  <page id="connectionPage">
+    <widget xsi:type="definition:Password" id="apiKeyWidget" inputName="apiKey"/>
+    <widget xsi:type="definition:Text" id="baseUrlWidget" inputName="baseUrl"/>
+    <widget xsi:type="definition:Text" id="modelWidget" inputName="model"/>
+    <widget xsi:type="definition:Text" id="connectTimeoutWidget" inputName="connectTimeout"/>
+    <widget xsi:type="definition:Text" id="readTimeoutWidget" inputName="readTimeout"/>
+  </page>
+  <page id="operationPage">
+    <widget xsi:type="definition:TextArea" id="documentBase64Widget" inputName="documentBase64"/>
+    <widget xsi:type="definition:Text" id="imageUrlWidget" inputName="imageUrl"/>
+    <widget xsi:type="definition:Text" id="mimeTypeWidget" inputName="mimeType"/>
+    <widget xsi:type="definition:TextArea" id="fieldsSchemaWidget" inputName="fieldsSchema"/>
+    <widget xsi:type="definition:TextArea" id="extractionPromptWidget" inputName="extractionPrompt"/>
+    <widget xsi:type="definition:Checkbox" id="strictModeWidget" inputName="strictMode"/>
+  </page>
+</definition:ConnectorDefinition>

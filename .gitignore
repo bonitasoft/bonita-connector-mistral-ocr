@@ -31,3 +31,6 @@ desktop.ini
 # Build
 *.log
 hs_err_pid*
+
+# jqwik
+.jqwik-database

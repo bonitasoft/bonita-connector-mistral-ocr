@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
+  <implementationId>${mistral-ocr-process-batch.impl.id}</implementationId>
+  <implementationVersion>${mistral-ocr-process-batch.impl.version}</implementationVersion>
+  <definitionId>${mistral-ocr-process-batch.def.id}</definitionId>
+  <definitionVersion>${mistral-ocr-process-batch.def.version}</definitionVersion>
+  <implementationClassname>${mistral-ocr-process-batch.main-class}</implementationClassname>
+  <hasSources>false</hasSources>
+  <description>Mistral OCR Process Batch connector implementation</description>
+
+<!-- retrieved from the pom.xml at build time -->
+${connector-dependencies}
+
+</implementation:connectorImplementation>

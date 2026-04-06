@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
+  <implementationId>${mistral-ocr-extract-table.impl.id}</implementationId>
+  <implementationVersion>${mistral-ocr-extract-table.impl.version}</implementationVersion>
+  <definitionId>${mistral-ocr-extract-table.def.id}</definitionId>
+  <definitionVersion>${mistral-ocr-extract-table.def.version}</definitionVersion>
+  <implementationClassname>${mistral-ocr-extract-table.main-class}</implementationClassname>
+  <hasSources>false</hasSources>
+  <description>Mistral OCR Extract Table connector implementation</description>
+
+<!-- retrieved from the pom.xml at build time -->
+${connector-dependencies}
+
+</implementation:connectorImplementation>

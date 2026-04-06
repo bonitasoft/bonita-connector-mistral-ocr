@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation:connectorImplementation xmlns:implementation="http://www.bonitasoft.org/ns/connector/implementation/6.0">
+  <implementationId>${mistral-ocr-classify-document.impl.id}</implementationId>
+  <implementationVersion>${mistral-ocr-classify-document.impl.version}</implementationVersion>
+  <definitionId>${mistral-ocr-classify-document.def.id}</definitionId>
+  <definitionVersion>${mistral-ocr-classify-document.def.version}</definitionVersion>
+  <implementationClassname>${mistral-ocr-classify-document.main-class}</implementationClassname>
+  <hasSources>false</hasSources>
+  <description>Mistral OCR Classify Document connector implementation</description>
+
+<!-- retrieved from the pom.xml at build time -->
+${connector-dependencies}
+
+</implementation:connectorImplementation>

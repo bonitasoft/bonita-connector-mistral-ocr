@@ -1,0 +1,56 @@
+name: Beta Feedback
+description: Report testing results for a beta connector operation
+labels: ["beta-feedback"]
+body:
+  - type: dropdown
+    id: operation
+    attributes:
+      label: Operation tested
+      description: Which connector operation did you test?
+      options:
+        - CHANGE_ME-operation-1
+        - CHANGE_ME-operation-2
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Working
+        - Partial (some issues)
+        - Broken
+    validations:
+      required: true
+  - type: dropdown
+    id: beta-version
+    attributes:
+      label: Beta version tested
+      description: Which beta version did you test?
+      options:
+        - 1.0.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: "Where was it tested? (e.g., customer project, internal lab, local dev)"
+      placeholder: "Customer project — Acme Corp"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Bonita version, OS, Java version
+      placeholder: "Bonita 2024.3, Windows 11, Java 17"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What was tested, steps taken, any errors encountered
+    validations:
+      required: true

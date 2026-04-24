@@ -39,7 +39,10 @@ class ExtractTextConnectorTest {
         connector.validateInputParameters();
         injectMockClient();
 
-        var result = new ExtractTextResult("Hello World", List.of("Hello", "World"), 2, 100);
+        var pagesMap = new java.util.LinkedHashMap<Integer, String>();
+        pagesMap.put(1, "Hello");
+        pagesMap.put(2, "World");
+        var result = new ExtractTextResult("Hello World", List.of("Hello", "World"), pagesMap, 2, 100);
         when(mockClient.extractText(any())).thenReturn(result);
 
         connector.executeBusinessLogic();

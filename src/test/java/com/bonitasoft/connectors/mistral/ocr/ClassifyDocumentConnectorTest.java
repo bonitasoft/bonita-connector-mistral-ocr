@@ -39,7 +39,8 @@ class ClassifyDocumentConnectorTest {
         connector.validateInputParameters();
         injectMockClient();
 
-        var result = new ClassifyDocumentResult("invoice", 0.92, "Contains invoice header", "{}", 120);
+        var result = new ClassifyDocumentResult("invoice", 0.92, "Contains invoice header", "{}",
+                java.util.List.of(), java.util.Map.of(), 1, 120);
         when(mockClient.classifyDocument(any())).thenReturn(result);
 
         connector.executeBusinessLogic();

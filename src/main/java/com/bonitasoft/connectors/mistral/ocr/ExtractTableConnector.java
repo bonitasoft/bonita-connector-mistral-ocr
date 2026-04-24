@@ -20,9 +20,14 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
     static final String INPUT_COLUMN_HEADERS = "columnHeaders";
     static final String INPUT_TABLE_HINT = "tableHint";
     static final String INPUT_PAGE_NUMBER = "pageNumber";
+    static final String INPUT_START_PAGE = "startPage";
+    static final String INPUT_END_PAGE = "endPage";
 
     static final String OUTPUT_TABLE_DATA = "tableData";
     static final String OUTPUT_TABLE_DATA_LIST = "tableDataList";
+    static final String OUTPUT_PAGES = "pages";
+    static final String OUTPUT_PAGES_MAP = "pagesMap";
+    static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_ROW_COUNT = "rowCount";
     static final String OUTPUT_COLUMN_COUNT = "columnCount";
     static final String OUTPUT_DETECTED_HEADERS = "detectedHeaders";
@@ -42,6 +47,8 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
                 .columnHeaders(readStringInput(INPUT_COLUMN_HEADERS))
                 .tableHint(readStringInput(INPUT_TABLE_HINT))
                 .pageNumber(readIntegerInput(INPUT_PAGE_NUMBER, 1))
+                .startPage(readOptionalInteger(INPUT_START_PAGE))
+                .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
     }
 
@@ -55,11 +62,27 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
     }
 
     @Override
+    protected void initializeOutputs() {
+        setOutputParameter(OUTPUT_TABLE_DATA, "");
+        setOutputParameter(OUTPUT_TABLE_DATA_LIST, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGE_COUNT, 0);
+        setOutputParameter(OUTPUT_ROW_COUNT, 0);
+        setOutputParameter(OUTPUT_COLUMN_COUNT, 0);
+        setOutputParameter(OUTPUT_DETECTED_HEADERS, "[]");
+        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+    }
+
+    @Override
     protected void doExecute() throws MistralOcrException {
         log.info("Executing Extract Table connector");
         ExtractTableResult result = client.extractTable(configuration);
         setOutputParameter(OUTPUT_TABLE_DATA, result.tableData());
         setOutputParameter(OUTPUT_TABLE_DATA_LIST, result.tableDataList());
+        setOutputParameter(OUTPUT_PAGES, result.pages());
+        setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
+        setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_ROW_COUNT, result.rowCount());
         setOutputParameter(OUTPUT_COLUMN_COUNT, result.columnCount());
         setOutputParameter(OUTPUT_DETECTED_HEADERS, result.detectedHeaders());

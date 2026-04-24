@@ -24,6 +24,7 @@
   <!-- Outputs -->
   <output name="fullText" type="java.lang.String"/>
   <output name="pages" type="java.util.List"/>
+  <output name="pagesMap" type="java.util.Map"/>
   <output name="pageCount" type="java.lang.Integer"/>
   <output name="totalWordCount" type="java.lang.Integer"/>
   <output name="tokensUsed" type="java.lang.Integer"/>

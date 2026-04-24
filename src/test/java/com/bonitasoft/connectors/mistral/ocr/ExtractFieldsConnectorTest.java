@@ -40,7 +40,8 @@ class ExtractFieldsConnectorTest {
         injectMockClient();
 
         Map<String, Object> fieldsMap = Map.of("name", "John", "amount", 42);
-        var result = new ExtractFieldsResult("{\"name\":\"John\",\"amount\":42}", fieldsMap, 2, 0.95, 150);
+        var result = new ExtractFieldsResult("{\"name\":\"John\",\"amount\":42}", fieldsMap,
+                java.util.List.of(), java.util.Map.of(), 1, 2, 0.95, 150);
         when(mockClient.extractFields(any())).thenReturn(result);
 
         connector.executeBusinessLogic();

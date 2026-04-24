@@ -20,12 +20,17 @@
   <!-- Operation-specific inputs -->
   <input name="documentTypes" type="java.lang.String" mandatory="true"/>
   <input name="includeReasoning" type="java.lang.Boolean" mandatory="false" defaultValue="false"/>
+  <input name="startPage" type="java.lang.Integer" mandatory="false"/>
+  <input name="endPage" type="java.lang.Integer" mandatory="false"/>
 
   <!-- Outputs -->
   <output name="documentType" type="java.lang.String"/>
   <output name="confidence" type="java.lang.Double"/>
   <output name="reasoning" type="java.lang.String"/>
   <output name="allScores" type="java.lang.String"/>
+  <output name="pages" type="java.util.List"/>
+  <output name="pagesMap" type="java.util.Map"/>
+  <output name="pageCount" type="java.lang.Integer"/>
   <output name="tokensUsed" type="java.lang.Integer"/>
   <output name="success" type="java.lang.Boolean"/>
   <output name="errorMessage" type="java.lang.String"/>
@@ -44,5 +49,7 @@
     <widget xsi:type="definition:Text" id="mimeTypeWidget" inputName="mimeType"/>
     <widget xsi:type="definition:TextArea" id="documentTypesWidget" inputName="documentTypes"/>
     <widget xsi:type="definition:Checkbox" id="includeReasoningWidget" inputName="includeReasoning"/>
+    <widget xsi:type="definition:Text" id="startPageWidget" inputName="startPage"/>
+    <widget xsi:type="definition:Text" id="endPageWidget" inputName="endPage"/>
   </page>
 </definition:ConnectorDefinition>

@@ -43,7 +43,8 @@ class ExtractTableConnectorTest {
                 Map.of("Name", "Alice", "Score", "95"),
                 Map.of("Name", "Bob", "Score", "87")
         );
-        var result = new ExtractTableResult("{}", rows, 2, 2, "[\"Name\",\"Score\"]", 200);
+        var result = new ExtractTableResult("{}", rows, java.util.List.of(),
+                java.util.Map.of(), 1, 2, 2, "[\"Name\",\"Score\"]", 200);
         when(mockClient.extractTable(any())).thenReturn(result);
 
         connector.executeBusinessLogic();

@@ -21,10 +21,15 @@
   <input name="fieldsSchema" type="java.lang.String" mandatory="true"/>
   <input name="extractionPrompt" type="java.lang.String" mandatory="false"/>
   <input name="strictMode" type="java.lang.Boolean" mandatory="false" defaultValue="false"/>
+  <input name="startPage" type="java.lang.Integer" mandatory="false"/>
+  <input name="endPage" type="java.lang.Integer" mandatory="false"/>
 
   <!-- Outputs -->
   <output name="extractedFields" type="java.lang.String"/>
   <output name="extractedFieldsMap" type="java.util.Map"/>
+  <output name="pages" type="java.util.List"/>
+  <output name="pagesMap" type="java.util.Map"/>
+  <output name="pageCount" type="java.lang.Integer"/>
   <output name="fieldCount" type="java.lang.Integer"/>
   <output name="confidence" type="java.lang.Double"/>
   <output name="tokensUsed" type="java.lang.Integer"/>
@@ -46,5 +51,7 @@
     <widget xsi:type="definition:TextArea" id="fieldsSchemaWidget" inputName="fieldsSchema"/>
     <widget xsi:type="definition:TextArea" id="extractionPromptWidget" inputName="extractionPrompt"/>
     <widget xsi:type="definition:Checkbox" id="strictModeWidget" inputName="strictMode"/>
+    <widget xsi:type="definition:Text" id="startPageWidget" inputName="startPage"/>
+    <widget xsi:type="definition:Text" id="endPageWidget" inputName="endPage"/>
   </page>
 </definition:ConnectorDefinition>

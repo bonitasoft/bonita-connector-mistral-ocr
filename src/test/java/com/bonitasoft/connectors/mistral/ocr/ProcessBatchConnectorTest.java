@@ -39,7 +39,11 @@ class ProcessBatchConnectorTest {
         connector.validateInputParameters();
         injectMockClient();
 
-        var result = new ProcessBatchResult("Page 1\n\nPage 2", List.of("Page 1", "Page 2"), 2, 4, 250, 1500L);
+        var pagesMap = new java.util.LinkedHashMap<Integer, String>();
+        pagesMap.put(1, "Page 1");
+        pagesMap.put(2, "Page 2");
+        var result = new ProcessBatchResult("Page 1\n\nPage 2", List.of("Page 1", "Page 2"),
+                pagesMap, 2, 4, 250, 1500L);
         when(mockClient.processBatch(any())).thenReturn(result);
 
         connector.executeBusinessLogic();
@@ -48,6 +52,7 @@ class ProcessBatchConnectorTest {
         assertThat(outputs.get("success")).isEqualTo(true);
         assertThat(outputs.get("fullText")).isEqualTo("Page 1\n\nPage 2");
         assertThat(outputs.get("pages")).isEqualTo(List.of("Page 1", "Page 2"));
+        assertThat(outputs.get("pagesMap")).isEqualTo(pagesMap);
         assertThat(outputs.get("pageCount")).isEqualTo(2);
         assertThat(outputs.get("totalWordCount")).isEqualTo(4);
         assertThat(outputs.get("tokensUsed")).isEqualTo(250);

@@ -19,11 +19,16 @@ public class ClassifyDocumentConnector extends AbstractMistralOcrConnector {
     static final String INPUT_MIME_TYPE = "mimeType";
     static final String INPUT_DOCUMENT_TYPES = "documentTypes";
     static final String INPUT_INCLUDE_REASONING = "includeReasoning";
+    static final String INPUT_START_PAGE = "startPage";
+    static final String INPUT_END_PAGE = "endPage";
 
     static final String OUTPUT_DOCUMENT_TYPE = "documentType";
     static final String OUTPUT_CONFIDENCE = "confidence";
     static final String OUTPUT_REASONING = "reasoning";
     static final String OUTPUT_ALL_SCORES = "allScores";
+    static final String OUTPUT_PAGES = "pages";
+    static final String OUTPUT_PAGES_MAP = "pagesMap";
+    static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_TOKENS_USED = "tokensUsed";
 
     @Override
@@ -39,6 +44,8 @@ public class ClassifyDocumentConnector extends AbstractMistralOcrConnector {
                 .mimeType(readStringInput(INPUT_MIME_TYPE, "application/pdf"))
                 .documentTypes(readStringInput(INPUT_DOCUMENT_TYPES))
                 .includeReasoning(readBooleanInput(INPUT_INCLUDE_REASONING, false))
+                .startPage(readOptionalInteger(INPUT_START_PAGE))
+                .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
     }
 
@@ -55,6 +62,18 @@ public class ClassifyDocumentConnector extends AbstractMistralOcrConnector {
     }
 
     @Override
+    protected void initializeOutputs() {
+        setOutputParameter(OUTPUT_DOCUMENT_TYPE, "");
+        setOutputParameter(OUTPUT_CONFIDENCE, 0.0);
+        setOutputParameter(OUTPUT_REASONING, "");
+        setOutputParameter(OUTPUT_ALL_SCORES, "{}");
+        setOutputParameter(OUTPUT_PAGES, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGE_COUNT, 0);
+        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+    }
+
+    @Override
     protected void doExecute() throws MistralOcrException {
         log.info("Executing Classify Document connector");
         ClassifyDocumentResult result = client.classifyDocument(configuration);
@@ -62,6 +81,9 @@ public class ClassifyDocumentConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_CONFIDENCE, result.confidence());
         setOutputParameter(OUTPUT_REASONING, result.reasoning());
         setOutputParameter(OUTPUT_ALL_SCORES, result.allScores());
+        setOutputParameter(OUTPUT_PAGES, result.pages());
+        setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
+        setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
         log.info("Classify Document connector executed successfully: type={}", result.documentType());
     }

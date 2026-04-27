@@ -12,5 +12,5 @@ public record ExtractTableResult(
         int rowCount,
         int columnCount,
         String detectedHeaders,
-        int tokensUsed
+        int pagesProcessed
 ) {}

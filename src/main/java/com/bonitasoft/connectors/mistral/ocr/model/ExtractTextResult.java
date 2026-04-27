@@ -8,5 +8,5 @@ public record ExtractTextResult(
         List<String> pages,
         Map<Integer, String> pagesMap,
         int pageCount,
-        int tokensUsed
+        int pagesProcessed
 ) {}

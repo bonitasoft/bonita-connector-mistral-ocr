@@ -30,7 +30,7 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
     static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_FIELD_COUNT = "fieldCount";
     static final String OUTPUT_CONFIDENCE = "confidence";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
 
     @Override
     protected MistralOcrConfiguration buildConfiguration() {
@@ -72,7 +72,7 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGE_COUNT, 0);
         setOutputParameter(OUTPUT_FIELD_COUNT, 0);
         setOutputParameter(OUTPUT_CONFIDENCE, 0.0);
-        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
     }
 
     @Override
@@ -86,7 +86,7 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_FIELD_COUNT, result.fieldCount());
         setOutputParameter(OUTPUT_CONFIDENCE, result.confidence());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         log.info("Extract Fields connector executed successfully ({} fields)", result.fieldCount());
     }
 }

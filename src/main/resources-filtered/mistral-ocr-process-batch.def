@@ -27,7 +27,7 @@
   <output name="pagesMap" type="java.util.Map"/>
   <output name="pageCount" type="java.lang.Integer"/>
   <output name="totalWordCount" type="java.lang.Integer"/>
-  <output name="tokensUsed" type="java.lang.Integer"/>
+  <output name="pagesProcessed" type="java.lang.Integer"/>
   <output name="processingTimeMs" type="java.lang.Long"/>
   <output name="success" type="java.lang.Boolean"/>
   <output name="errorMessage" type="java.lang.String"/>

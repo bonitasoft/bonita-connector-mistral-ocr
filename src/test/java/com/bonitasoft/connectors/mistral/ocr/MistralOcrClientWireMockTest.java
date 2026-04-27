@@ -73,7 +73,7 @@ class MistralOcrClientWireMockTest {
         assertThat(result.pageCount()).isEqualTo(2);
         assertThat(result.pages()).containsExactly("# Page one\nHello", "Page two text");
         assertThat(result.extractedText()).contains("Page one").contains("Page two");
-        assertThat(result.tokensUsed()).isEqualTo(42);
+        assertThat(result.pagesProcessed()).isEqualTo(42);
 
         wireMock.verify(postRequestedFor(urlEqualTo("/v1/ocr"))
                 .withRequestBody(matchingJsonPath("$.model", equalTo("mistral-ocr-latest")))
@@ -141,7 +141,7 @@ class MistralOcrClientWireMockTest {
         assertThat(result.extractedFieldsMap()).containsEntry("invoice_number", "INV-001");
         assertThat(result.extractedFieldsMap()).containsEntry("total", 123.45);
         assertThat(result.confidence()).isEqualTo(0.95);
-        assertThat(result.tokensUsed()).isEqualTo(1);
+        assertThat(result.pagesProcessed()).isEqualTo(1);
 
         wireMock.verify(postRequestedFor(urlEqualTo("/v1/ocr"))
                 .withRequestBody(matchingJsonPath("$.document.type", equalTo("document_url")))
@@ -269,7 +269,11 @@ class MistralOcrClientWireMockTest {
         assertThat(result.pagesMap().get(2)).isEqualTo("page 2 content");
         assertThat(result.processingTimeMs()).isGreaterThanOrEqualTo(0);
 
+        // Strong asserts on the pages array: pin the array length AND each value.
+        // matchingJsonPath alone doesn't pin length, so a bug that sent
+        // [1,2,3,4,5] would still pass with positional equalTo asserts.
         wireMock.verify(postRequestedFor(urlEqualTo("/v1/ocr"))
+                .withRequestBody(matchingJsonPath("$.pages.length()", equalTo("3")))
                 .withRequestBody(matchingJsonPath("$.pages[0]", equalTo("1")))
                 .withRequestBody(matchingJsonPath("$.pages[1]", equalTo("2")))
                 .withRequestBody(matchingJsonPath("$.pages[2]", equalTo("3"))));

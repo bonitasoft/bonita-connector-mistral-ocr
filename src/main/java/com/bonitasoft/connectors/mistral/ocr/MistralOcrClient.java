@@ -59,9 +59,9 @@ public class MistralOcrClient {
             List<String> pages = extractPages(response);
             Map<Integer, String> pagesMap = extractPagesMap(response);
             String fullText = pages.stream().collect(Collectors.joining("\n\n"));
-            int tokensUsed = usagePages(response);
+            int pagesProcessed = usagePages(response);
 
-            return new ExtractTextResult(fullText, pages, pagesMap, pages.size(), tokensUsed);
+            return new ExtractTextResult(fullText, pages, pagesMap, pages.size(), pagesProcessed);
         });
     }
 
@@ -77,7 +77,7 @@ public class MistralOcrClient {
             String annotation = response.path("document_annotation").asText("");
             List<String> pages = extractPages(response);
             Map<Integer, String> pagesMap = extractPagesMap(response);
-            int tokensUsed = usagePages(response);
+            int pagesProcessed = usagePages(response);
 
             Map<String, Object> fieldsMap;
             try {
@@ -86,12 +86,13 @@ public class MistralOcrClient {
                 fieldsMap = Map.of("raw", annotation);
             }
 
-            double confidence = fieldsMap.containsKey("confidence")
-                    ? ((Number) fieldsMap.get("confidence")).doubleValue()
-                    : 1.0;
+            // Guard against null/non-numeric confidence values from the API
+            // (e.g. Mistral returns null in strictMode when no fields were found).
+            Object rawConfidence = fieldsMap.get("confidence");
+            double confidence = (rawConfidence instanceof Number n) ? n.doubleValue() : 1.0;
 
             return new ExtractFieldsResult(annotation, fieldsMap, pages, pagesMap,
-                    pagesMap.size(), fieldsMap.size(), confidence, tokensUsed);
+                    pages.size(), fieldsMap.size(), confidence, pagesProcessed);
         });
     }
 
@@ -121,14 +122,14 @@ public class MistralOcrClient {
             String annotation = response.path("document_annotation").asText("{}");
             List<String> pages = extractPages(response);
             Map<Integer, String> pagesMap = extractPagesMap(response);
-            int tokensUsed = usagePages(response);
+            int pagesProcessed = usagePages(response);
 
             JsonNode parsed;
             try {
                 parsed = objectMapper.readTree(annotation);
             } catch (Exception e) {
                 return new ClassifyDocumentResult(annotation.trim(), 0.0, "", "{}",
-                        pages, pagesMap, pagesMap.size(), tokensUsed);
+                        pages, pagesMap, pages.size(), pagesProcessed);
             }
 
             String docTypeValue = parsed.path("document_type").asText("unknown");
@@ -137,7 +138,7 @@ public class MistralOcrClient {
             String allScores = parsed.has("scores") ? parsed.get("scores").toString() : "{}";
 
             return new ClassifyDocumentResult(docTypeValue, confidence, reasoning, allScores,
-                    pages, pagesMap, pagesMap.size(), tokensUsed);
+                    pages, pagesMap, pages.size(), pagesProcessed);
         });
     }
 
@@ -165,7 +166,7 @@ public class MistralOcrClient {
             String annotation = response.path("document_annotation").asText("{}");
             List<String> pages = extractPages(response);
             Map<Integer, String> pagesMap = extractPagesMap(response);
-            int tokensUsed = usagePages(response);
+            int pagesProcessed = usagePages(response);
 
             List<Map<String, String>> tableDataList;
             String detectedHeaders;
@@ -185,7 +186,7 @@ public class MistralOcrClient {
             int columnCount = tableDataList.isEmpty() ? 0 : tableDataList.get(0).size();
 
             return new ExtractTableResult(annotation, tableDataList, pages, pagesMap,
-                    pagesMap.size(), rowCount, columnCount, detectedHeaders, tokensUsed);
+                    pages.size(), rowCount, columnCount, detectedHeaders, pagesProcessed);
         });
     }
 
@@ -201,11 +202,11 @@ public class MistralOcrClient {
             Map<Integer, String> pagesMap = extractPagesMap(response);
             String fullText = pages.stream().collect(Collectors.joining("\n\n"));
             int totalWordCount = fullText.isBlank() ? 0 : fullText.split("\\s+").length;
-            int tokensUsed = usagePages(response);
+            int pagesProcessed = usagePages(response);
             long processingTimeMs = System.currentTimeMillis() - startTime;
 
             return new ProcessBatchResult(fullText, pages, pagesMap, pages.size(),
-                    totalWordCount, tokensUsed, processingTimeMs);
+                    totalWordCount, pagesProcessed, processingTimeMs);
         });
     }
 
@@ -213,21 +214,32 @@ public class MistralOcrClient {
      * Apply the optional page-range filter to the OCR request body.
      * Users pass 1-indexed page numbers (natural language: "page 1, 2, 3..."),
      * but Mistral's API is 0-indexed. Converts and filters invalid values.
-     * When both startPage and endPage are null (default), the entire document
-     * is processed — kept backwards-compatible with older .proc files that do
-     * not set these inputs.
+     *
+     * Both inputs must be set together to take effect. If only one is provided,
+     * the entire document is processed — but a warning is logged so the user
+     * sees that their partial input was ignored. When both are null (default),
+     * the whole document is processed silently — backwards-compatible with
+     * older .proc files that do not set these inputs.
      */
-    private void applyPageRange(ObjectNode body, MistralOcrConfiguration config) {
+    private void applyPageRange(ObjectNode body, MistralOcrConfiguration config) throws MistralOcrException {
         Integer start = config.getStartPage();
         Integer end = config.getEndPage();
-        if (start == null || end == null) {
+        if (start == null && end == null) {
             return;
+        }
+        if (start == null || end == null) {
+            throw new MistralOcrException(
+                    "startPage and endPage must be set together (got startPage=" + start
+                            + ", endPage=" + end + "). Leave both blank to process the entire document.");
+        }
+        if (start < 1 || end < start) {
+            throw new MistralOcrException(
+                    "Invalid page range startPage=" + start + ", endPage=" + end
+                            + ". Pages are 1-indexed and endPage must be >= startPage.");
         }
         ArrayNode pagesArray = body.putArray("pages");
         for (int i = start; i <= end; i++) {
-            if (i >= 1) {
-                pagesArray.add(i - 1);
-            }
+            pagesArray.add(i - 1);
         }
     }
 

@@ -54,7 +54,7 @@ class ExtractTableConnectorTest {
         assertThat(outputs.get("tableDataList")).isEqualTo(rows);
         assertThat(outputs.get("rowCount")).isEqualTo(2);
         assertThat(outputs.get("columnCount")).isEqualTo(2);
-        assertThat(outputs.get("tokensUsed")).isEqualTo(200);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(200);
     }
 
     @Test
@@ -90,14 +90,6 @@ class ExtractTableConnectorTest {
         Map<String, Object> outputs = connector.getOutputs();
         assertThat(outputs.get("success")).isEqualTo(false);
         assertThat(outputs.get("errorMessage")).asString().contains("Table extraction failed");
-    }
-
-    @Test
-    void shouldApplyDefaultPageNumber() throws Exception {
-        connector.setInputParameters(inputs);
-        connector.validateInputParameters();
-
-        assertThat(connector.configuration.getPageNumber()).isEqualTo(1);
     }
 
     private void injectMockClient() throws Exception {

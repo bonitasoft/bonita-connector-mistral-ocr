@@ -46,8 +46,6 @@ public class MistralOcrConfiguration {
     // === Extract Table parameters ===
     private String columnHeaders;
     private String tableHint;
-    @Builder.Default
-    private int pageNumber = 1;
 
     // === Process Batch parameters ===
     private String imageUrls;

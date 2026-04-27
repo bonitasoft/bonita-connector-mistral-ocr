@@ -11,5 +11,5 @@ public record ExtractFieldsResult(
         int pageCount,
         int fieldCount,
         double confidence,
-        int tokensUsed
+        int pagesProcessed
 ) {}

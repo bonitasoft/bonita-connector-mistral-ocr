@@ -50,7 +50,7 @@ class ClassifyDocumentConnectorTest {
         assertThat(outputs.get("documentType")).isEqualTo("invoice");
         assertThat(outputs.get("confidence")).isEqualTo(0.92);
         assertThat(outputs.get("reasoning")).isEqualTo("Contains invoice header");
-        assertThat(outputs.get("tokensUsed")).isEqualTo(120);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(120);
     }
 
     @Test

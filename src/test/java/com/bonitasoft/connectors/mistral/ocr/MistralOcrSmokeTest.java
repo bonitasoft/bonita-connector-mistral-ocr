@@ -37,7 +37,7 @@ class MistralOcrSmokeTest {
 
         System.out.println("=== Mistral OCR Smoke Test ===");
         System.out.println("Pages: " + result.pageCount());
-        System.out.println("Tokens used: " + result.tokensUsed());
+        System.out.println("Tokens used: " + result.pagesProcessed());
         System.out.println("First 500 chars:\n" + safeSubstring(result.extractedText(), 500));
 
         assertThat(result).isNotNull();

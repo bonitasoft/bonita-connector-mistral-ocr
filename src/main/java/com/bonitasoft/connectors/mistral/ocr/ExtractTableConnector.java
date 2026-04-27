@@ -19,7 +19,6 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
     static final String INPUT_MIME_TYPE = "mimeType";
     static final String INPUT_COLUMN_HEADERS = "columnHeaders";
     static final String INPUT_TABLE_HINT = "tableHint";
-    static final String INPUT_PAGE_NUMBER = "pageNumber";
     static final String INPUT_START_PAGE = "startPage";
     static final String INPUT_END_PAGE = "endPage";
 
@@ -31,7 +30,7 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
     static final String OUTPUT_ROW_COUNT = "rowCount";
     static final String OUTPUT_COLUMN_COUNT = "columnCount";
     static final String OUTPUT_DETECTED_HEADERS = "detectedHeaders";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
 
     @Override
     protected MistralOcrConfiguration buildConfiguration() {
@@ -46,7 +45,6 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
                 .mimeType(readStringInput(INPUT_MIME_TYPE, "application/pdf"))
                 .columnHeaders(readStringInput(INPUT_COLUMN_HEADERS))
                 .tableHint(readStringInput(INPUT_TABLE_HINT))
-                .pageNumber(readIntegerInput(INPUT_PAGE_NUMBER, 1))
                 .startPage(readOptionalInteger(INPUT_START_PAGE))
                 .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
@@ -71,7 +69,7 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_ROW_COUNT, 0);
         setOutputParameter(OUTPUT_COLUMN_COUNT, 0);
         setOutputParameter(OUTPUT_DETECTED_HEADERS, "[]");
-        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
     }
 
     @Override
@@ -86,7 +84,7 @@ public class ExtractTableConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_ROW_COUNT, result.rowCount());
         setOutputParameter(OUTPUT_COLUMN_COUNT, result.columnCount());
         setOutputParameter(OUTPUT_DETECTED_HEADERS, result.detectedHeaders());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         log.info("Extract Table connector executed successfully ({} rows x {} cols)",
                 result.rowCount(), result.columnCount());
     }

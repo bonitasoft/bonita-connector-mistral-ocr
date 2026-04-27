@@ -26,7 +26,7 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
     static final String OUTPUT_PAGES = "pages";
     static final String OUTPUT_PAGES_MAP = "pagesMap";
     static final String OUTPUT_PAGE_COUNT = "pageCount";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
 
     @Override
     protected MistralOcrConfiguration buildConfiguration() {
@@ -61,7 +61,7 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGES, java.util.List.of());
         setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
         setOutputParameter(OUTPUT_PAGE_COUNT, 0);
-        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
     }
 
     @Override
@@ -72,7 +72,7 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGES, result.pages());
         setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
         setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         log.info("Extract Text connector executed successfully ({} pages)", result.pageCount());
     }
 }

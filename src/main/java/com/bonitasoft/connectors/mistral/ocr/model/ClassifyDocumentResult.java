@@ -11,5 +11,5 @@ public record ClassifyDocumentResult(
         List<String> pages,
         Map<Integer, String> pagesMap,
         int pageCount,
-        int tokensUsed
+        int pagesProcessed
 ) {}

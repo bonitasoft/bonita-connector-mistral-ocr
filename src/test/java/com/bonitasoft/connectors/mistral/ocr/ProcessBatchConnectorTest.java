@@ -55,7 +55,7 @@ class ProcessBatchConnectorTest {
         assertThat(outputs.get("pagesMap")).isEqualTo(pagesMap);
         assertThat(outputs.get("pageCount")).isEqualTo(2);
         assertThat(outputs.get("totalWordCount")).isEqualTo(4);
-        assertThat(outputs.get("tokensUsed")).isEqualTo(250);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(250);
         assertThat(outputs.get("processingTimeMs")).isEqualTo(1500L);
     }
 

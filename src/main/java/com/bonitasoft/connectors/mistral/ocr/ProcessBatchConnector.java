@@ -25,7 +25,7 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
     static final String OUTPUT_PAGES_MAP = "pagesMap";
     static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_TOTAL_WORD_COUNT = "totalWordCount";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
     static final String OUTPUT_PROCESSING_TIME_MS = "processingTimeMs";
 
     @Override
@@ -60,7 +60,7 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
         setOutputParameter(OUTPUT_PAGE_COUNT, 0);
         setOutputParameter(OUTPUT_TOTAL_WORD_COUNT, 0);
-        setOutputParameter(OUTPUT_TOKENS_USED, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
         setOutputParameter(OUTPUT_PROCESSING_TIME_MS, 0L);
     }
 
@@ -73,7 +73,7 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
         setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
         setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_TOTAL_WORD_COUNT, result.totalWordCount());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         setOutputParameter(OUTPUT_PROCESSING_TIME_MS, result.processingTimeMs());
         log.info("Process Batch connector executed successfully ({} pages, {}ms)",
                 result.pageCount(), result.processingTimeMs());

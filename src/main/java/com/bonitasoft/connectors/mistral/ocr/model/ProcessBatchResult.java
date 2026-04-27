@@ -9,6 +9,6 @@ public record ProcessBatchResult(
         Map<Integer, String> pagesMap,
         int pageCount,
         int totalWordCount,
-        int tokensUsed,
+        int pagesProcessed,
         long processingTimeMs
 ) {}

@@ -52,7 +52,7 @@ class ExtractFieldsConnectorTest {
         assertThat(outputs.get("extractedFieldsMap")).isEqualTo(fieldsMap);
         assertThat(outputs.get("fieldCount")).isEqualTo(2);
         assertThat(outputs.get("confidence")).isEqualTo(0.95);
-        assertThat(outputs.get("tokensUsed")).isEqualTo(150);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(150);
     }
 
     @Test
@@ -98,6 +98,37 @@ class ExtractFieldsConnectorTest {
         Map<String, Object> outputs = connector.getOutputs();
         assertThat(outputs.get("success")).isEqualTo(false);
         assertThat(outputs.get("errorMessage")).asString().contains("Field extraction failed");
+    }
+
+    /**
+     * Negative-path coverage of initializeOutputs(): when the client throws,
+     * every output declared in the .def must be present (non-null) in the
+     * connector outputs. Otherwise a .proc mapping that output crashes with
+     * SExpressionEvaluationException: No value found for mandatory expression.
+     */
+    @Test
+    void shouldInitializeAllDeclaredOutputsEvenWhenClientThrows() throws Exception {
+        connector.setInputParameters(inputs);
+        connector.validateInputParameters();
+        injectMockClient();
+
+        when(mockClient.extractFields(any())).thenThrow(new MistralOcrException("boom"));
+
+        connector.executeBusinessLogic();
+
+        Map<String, Object> outputs = connector.getOutputs();
+        // Every output declared in mistral-ocr-extract-fields.def must be present.
+        for (String declared : new String[]{
+                "extractedFields", "extractedFieldsMap", "pages", "pagesMap",
+                "pageCount", "fieldCount", "confidence", "pagesProcessed",
+                "success", "errorMessage"}) {
+            assertThat(outputs).as("declared output '%s' must be initialized", declared)
+                    .containsKey(declared);
+            assertThat(outputs.get(declared)).as("declared output '%s' must not be null", declared)
+                    .isNotNull();
+        }
+        assertThat(outputs.get("success")).isEqualTo(false);
+        assertThat(outputs.get("errorMessage")).asString().contains("boom");
     }
 
     private void injectMockClient() throws Exception {

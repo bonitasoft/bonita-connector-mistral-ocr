@@ -22,9 +22,10 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
 
     static final String OUTPUT_FULL_TEXT = "fullText";
     static final String OUTPUT_PAGES = "pages";
+    static final String OUTPUT_PAGES_MAP = "pagesMap";
     static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_TOTAL_WORD_COUNT = "totalWordCount";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
     static final String OUTPUT_PROCESSING_TIME_MS = "processingTimeMs";
 
     @Override
@@ -38,8 +39,8 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
                 .documentBase64(readStringInput(INPUT_DOCUMENT_BASE64))
                 .imageUrls(readStringInput(INPUT_IMAGE_URLS))
                 .mimeType(readStringInput(INPUT_MIME_TYPE, "application/pdf"))
-                .startPage(getOptionalInteger(INPUT_START_PAGE))
-                .endPage(getOptionalInteger(INPUT_END_PAGE))
+                .startPage(readOptionalInteger(INPUT_START_PAGE))
+                .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
     }
 
@@ -53,21 +54,29 @@ public class ProcessBatchConnector extends AbstractMistralOcrConnector {
     }
 
     @Override
+    protected void initializeOutputs() {
+        setOutputParameter(OUTPUT_FULL_TEXT, "");
+        setOutputParameter(OUTPUT_PAGES, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGE_COUNT, 0);
+        setOutputParameter(OUTPUT_TOTAL_WORD_COUNT, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
+        setOutputParameter(OUTPUT_PROCESSING_TIME_MS, 0L);
+    }
+
+    @Override
     protected void doExecute() throws MistralOcrException {
         log.info("Executing Process Batch connector");
         ProcessBatchResult result = client.processBatch(configuration);
         setOutputParameter(OUTPUT_FULL_TEXT, result.fullText());
         setOutputParameter(OUTPUT_PAGES, result.pages());
+        setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
         setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_TOTAL_WORD_COUNT, result.totalWordCount());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         setOutputParameter(OUTPUT_PROCESSING_TIME_MS, result.processingTimeMs());
         log.info("Process Batch connector executed successfully ({} pages, {}ms)",
                 result.pageCount(), result.processingTimeMs());
     }
 
-    private Integer getOptionalInteger(String name) {
-        Object value = getInputParameter(name);
-        return value != null ? ((Number) value).intValue() : null;
-    }
 }

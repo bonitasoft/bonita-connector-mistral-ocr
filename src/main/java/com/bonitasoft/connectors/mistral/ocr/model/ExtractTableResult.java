@@ -6,8 +6,11 @@ import java.util.Map;
 public record ExtractTableResult(
         String tableData,
         List<Map<String, String>> tableDataList,
+        List<String> pages,
+        Map<Integer, String> pagesMap,
+        int pageCount,
         int rowCount,
         int columnCount,
         String detectedHeaders,
-        int tokensUsed
+        int pagesProcessed
 ) {}

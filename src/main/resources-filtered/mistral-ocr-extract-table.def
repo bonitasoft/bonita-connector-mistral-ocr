@@ -20,15 +20,19 @@
   <!-- Operation-specific inputs -->
   <input name="columnHeaders" type="java.lang.String" mandatory="false"/>
   <input name="tableHint" type="java.lang.String" mandatory="false"/>
-  <input name="pageNumber" type="java.lang.Integer" mandatory="false" defaultValue="1"/>
+  <input name="startPage" type="java.lang.Integer" mandatory="false"/>
+  <input name="endPage" type="java.lang.Integer" mandatory="false"/>
 
   <!-- Outputs -->
   <output name="tableData" type="java.lang.String"/>
   <output name="tableDataList" type="java.util.List"/>
+  <output name="pages" type="java.util.List"/>
+  <output name="pagesMap" type="java.util.Map"/>
+  <output name="pageCount" type="java.lang.Integer"/>
   <output name="rowCount" type="java.lang.Integer"/>
   <output name="columnCount" type="java.lang.Integer"/>
   <output name="detectedHeaders" type="java.lang.String"/>
-  <output name="tokensUsed" type="java.lang.Integer"/>
+  <output name="pagesProcessed" type="java.lang.Integer"/>
   <output name="success" type="java.lang.Boolean"/>
   <output name="errorMessage" type="java.lang.String"/>
 
@@ -46,6 +50,7 @@
     <widget xsi:type="definition:Text" id="mimeTypeWidget" inputName="mimeType"/>
     <widget xsi:type="definition:Text" id="columnHeadersWidget" inputName="columnHeaders"/>
     <widget xsi:type="definition:Text" id="tableHintWidget" inputName="tableHint"/>
-    <widget xsi:type="definition:Text" id="pageNumberWidget" inputName="pageNumber"/>
+    <widget xsi:type="definition:Text" id="startPageWidget" inputName="startPage"/>
+    <widget xsi:type="definition:Text" id="endPageWidget" inputName="endPage"/>
   </page>
 </definition:ConnectorDefinition>

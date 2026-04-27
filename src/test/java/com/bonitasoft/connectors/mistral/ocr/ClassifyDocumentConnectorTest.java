@@ -39,7 +39,8 @@ class ClassifyDocumentConnectorTest {
         connector.validateInputParameters();
         injectMockClient();
 
-        var result = new ClassifyDocumentResult("invoice", 0.92, "Contains invoice header", "{}", 120);
+        var result = new ClassifyDocumentResult("invoice", 0.92, "Contains invoice header", "{}",
+                java.util.List.of(), java.util.Map.of(), 1, 120);
         when(mockClient.classifyDocument(any())).thenReturn(result);
 
         connector.executeBusinessLogic();
@@ -49,7 +50,7 @@ class ClassifyDocumentConnectorTest {
         assertThat(outputs.get("documentType")).isEqualTo("invoice");
         assertThat(outputs.get("confidence")).isEqualTo(0.92);
         assertThat(outputs.get("reasoning")).isEqualTo("Contains invoice header");
-        assertThat(outputs.get("tokensUsed")).isEqualTo(120);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(120);
     }
 
     @Test

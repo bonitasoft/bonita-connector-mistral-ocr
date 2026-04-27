@@ -14,12 +14,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * API client facade for Mistral OCR connector.
- * Uses java.net.http.HttpClient and Jackson for JSON processing.
+ * All 5 operations go through POST /ocr:
+ *  - extractText / processBatch: plain OCR
+ *  - extractFields / classifyDocument / extractTable: OCR + document_annotation_format
+ *
+ * Supports both PDFs (document_url) and images (image_url), selected from mimeType.
  */
 @Slf4j
 public class MistralOcrClient {
@@ -43,107 +49,133 @@ public class MistralOcrClient {
         }
     }
 
-    /**
-     * Extract text from a document via POST /ocr.
-     */
     public ExtractTextResult extractText(MistralOcrConfiguration config) throws MistralOcrException {
         return retryPolicy.execute(() -> {
             ObjectNode body = buildOcrRequestBody(config);
-            if (config.getLanguage() != null && !config.getLanguage().isBlank()) {
-                body.put("language", config.getLanguage());
-            }
-            body.put("include_page_segmentation", config.isIncludePageSegmentation());
+            applyPageRange(body, config);
 
             JsonNode response = executePost(config.getBaseUrl() + "/ocr", body, config.getReadTimeout());
 
             List<String> pages = extractPages(response);
+            Map<Integer, String> pagesMap = extractPagesMap(response);
             String fullText = pages.stream().collect(Collectors.joining("\n\n"));
-            int tokensUsed = response.path("usage").path("total_tokens").asInt(0);
+            int pagesProcessed = usagePages(response);
 
-            return new ExtractTextResult(fullText, pages, pages.size(), tokensUsed);
+            return new ExtractTextResult(fullText, pages, pagesMap, pages.size(), pagesProcessed);
         });
     }
 
-    /**
-     * Extract structured fields via POST /chat/completions (vision + JSON mode).
-     */
     public ExtractFieldsResult extractFields(MistralOcrConfiguration config) throws MistralOcrException {
         return retryPolicy.execute(() -> {
-            String prompt = buildFieldExtractionPrompt(config);
-            ObjectNode body = buildChatCompletionBody(config, prompt, true);
+            ObjectNode body = buildOcrRequestBody(config);
+            applyPageRange(body, config);
+            JsonNode userSchema = parseOrWrapSchema(config.getFieldsSchema());
+            body.set("document_annotation_format", buildJsonSchemaFormat("ExtractedFields", userSchema));
 
-            JsonNode response = executePost(config.getBaseUrl() + "/chat/completions", body, config.getReadTimeout());
+            JsonNode response = executePost(config.getBaseUrl() + "/ocr", body, config.getReadTimeout());
 
-            String content = extractChatContent(response);
-            int tokensUsed = response.path("usage").path("total_tokens").asInt(0);
+            String annotation = response.path("document_annotation").asText("");
+            List<String> pages = extractPages(response);
+            Map<Integer, String> pagesMap = extractPagesMap(response);
+            int pagesProcessed = usagePages(response);
 
             Map<String, Object> fieldsMap;
             try {
-                fieldsMap = objectMapper.readValue(content, new TypeReference<>() {});
+                fieldsMap = objectMapper.readValue(annotation, new TypeReference<>() {});
             } catch (Exception e) {
-                fieldsMap = Map.of("raw", content);
+                fieldsMap = Map.of("raw", annotation);
             }
 
-            double confidence = fieldsMap.containsKey("confidence")
-                    ? ((Number) fieldsMap.get("confidence")).doubleValue()
-                    : 1.0;
+            // Guard against null/non-numeric confidence values from the API
+            // (e.g. Mistral returns null in strictMode when no fields were found).
+            Object rawConfidence = fieldsMap.get("confidence");
+            double confidence = (rawConfidence instanceof Number n) ? n.doubleValue() : 1.0;
 
-            return new ExtractFieldsResult(content, fieldsMap, fieldsMap.size(), confidence, tokensUsed);
+            return new ExtractFieldsResult(annotation, fieldsMap, pages, pagesMap,
+                    pages.size(), fieldsMap.size(), confidence, pagesProcessed);
         });
     }
 
-    /**
-     * Classify a document via POST /chat/completions (vision + classification prompt).
-     */
     public ClassifyDocumentResult classifyDocument(MistralOcrConfiguration config) throws MistralOcrException {
         return retryPolicy.execute(() -> {
-            String prompt = buildClassificationPrompt(config);
-            ObjectNode body = buildChatCompletionBody(config, prompt, true);
+            ObjectNode schema = objectMapper.createObjectNode();
+            schema.put("type", "object");
+            ObjectNode props = schema.putObject("properties");
+            ObjectNode docType = props.putObject("document_type");
+            docType.put("type", "string");
+            docType.put("description",
+                    "One of the following types: " + config.getDocumentTypes());
+            props.putObject("confidence").put("type", "number");
+            props.putObject("scores").put("type", "object").put("additionalProperties", true);
+            if (config.isIncludeReasoning()) {
+                props.putObject("reasoning").put("type", "string");
+            }
+            schema.putArray("required").add("document_type").add("confidence");
+            schema.put("additionalProperties", false);
 
-            JsonNode response = executePost(config.getBaseUrl() + "/chat/completions", body, config.getReadTimeout());
+            ObjectNode body = buildOcrRequestBody(config);
+            applyPageRange(body, config);
+            body.set("document_annotation_format", buildJsonSchemaFormat("DocumentClassification", schema));
 
-            String content = extractChatContent(response);
-            int tokensUsed = response.path("usage").path("total_tokens").asInt(0);
+            JsonNode response = executePost(config.getBaseUrl() + "/ocr", body, config.getReadTimeout());
+
+            String annotation = response.path("document_annotation").asText("{}");
+            List<String> pages = extractPages(response);
+            Map<Integer, String> pagesMap = extractPagesMap(response);
+            int pagesProcessed = usagePages(response);
 
             JsonNode parsed;
             try {
-                parsed = objectMapper.readTree(content);
+                parsed = objectMapper.readTree(annotation);
             } catch (Exception e) {
-                return new ClassifyDocumentResult(content.trim(), 0.0, "", "{}", tokensUsed);
+                return new ClassifyDocumentResult(annotation.trim(), 0.0, "", "{}",
+                        pages, pagesMap, pages.size(), pagesProcessed);
             }
 
-            String docType = parsed.path("document_type").asText(parsed.path("type").asText("unknown"));
+            String docTypeValue = parsed.path("document_type").asText("unknown");
             double confidence = parsed.path("confidence").asDouble(0.0);
             String reasoning = parsed.path("reasoning").asText("");
             String allScores = parsed.has("scores") ? parsed.get("scores").toString() : "{}";
 
-            return new ClassifyDocumentResult(docType, confidence, reasoning, allScores, tokensUsed);
+            return new ClassifyDocumentResult(docTypeValue, confidence, reasoning, allScores,
+                    pages, pagesMap, pages.size(), pagesProcessed);
         });
     }
 
-    /**
-     * Extract table data via POST /chat/completions (vision + table extraction prompt).
-     */
     public ExtractTableResult extractTable(MistralOcrConfiguration config) throws MistralOcrException {
         return retryPolicy.execute(() -> {
-            String prompt = buildTableExtractionPrompt(config);
-            ObjectNode body = buildChatCompletionBody(config, prompt, true);
+            ObjectNode schema = objectMapper.createObjectNode();
+            schema.put("type", "object");
+            ObjectNode props = schema.putObject("properties");
+            ObjectNode headersProp = props.putObject("headers");
+            headersProp.put("type", "array");
+            headersProp.putObject("items").put("type", "string");
+            ObjectNode rowsProp = props.putObject("rows");
+            rowsProp.put("type", "array");
+            ObjectNode rowItem = rowsProp.putObject("items");
+            rowItem.put("type", "object");
+            rowItem.put("additionalProperties", true);
+            schema.putArray("required").add("headers").add("rows");
 
-            JsonNode response = executePost(config.getBaseUrl() + "/chat/completions", body, config.getReadTimeout());
+            ObjectNode body = buildOcrRequestBody(config);
+            applyPageRange(body, config);
+            body.set("document_annotation_format", buildJsonSchemaFormat("TableExtraction", schema));
 
-            String content = extractChatContent(response);
-            int tokensUsed = response.path("usage").path("total_tokens").asInt(0);
+            JsonNode response = executePost(config.getBaseUrl() + "/ocr", body, config.getReadTimeout());
+
+            String annotation = response.path("document_annotation").asText("{}");
+            List<String> pages = extractPages(response);
+            Map<Integer, String> pagesMap = extractPagesMap(response);
+            int pagesProcessed = usagePages(response);
 
             List<Map<String, String>> tableDataList;
             String detectedHeaders;
             try {
-                JsonNode parsed = objectMapper.readTree(content);
+                JsonNode parsed = objectMapper.readTree(annotation);
                 JsonNode rows = parsed.has("rows") ? parsed.get("rows") : parsed;
-                if (rows.isArray()) {
-                    tableDataList = objectMapper.convertValue(rows, new TypeReference<>() {});
-                } else {
-                    tableDataList = List.of();
-                }
+                tableDataList = rows.isArray()
+                        ? objectMapper.convertValue(rows, new TypeReference<>() {})
+                        : List.of();
                 detectedHeaders = parsed.has("headers") ? parsed.get("headers").toString() : "[]";
             } catch (Exception e) {
                 tableDataList = List.of();
@@ -153,36 +185,62 @@ public class MistralOcrClient {
             int rowCount = tableDataList.size();
             int columnCount = tableDataList.isEmpty() ? 0 : tableDataList.get(0).size();
 
-            return new ExtractTableResult(content, tableDataList, rowCount, columnCount, detectedHeaders, tokensUsed);
+            return new ExtractTableResult(annotation, tableDataList, pages, pagesMap,
+                    pages.size(), rowCount, columnCount, detectedHeaders, pagesProcessed);
         });
     }
 
-    /**
-     * Process a batch of pages via POST /ocr (multi-page).
-     */
     public ProcessBatchResult processBatch(MistralOcrConfiguration config) throws MistralOcrException {
         return retryPolicy.execute(() -> {
             long startTime = System.currentTimeMillis();
             ObjectNode body = buildOcrRequestBody(config);
-            body.put("include_page_segmentation", true);
-
-            if (config.getStartPage() != null) {
-                body.put("start_page", config.getStartPage());
-            }
-            if (config.getEndPage() != null) {
-                body.put("end_page", config.getEndPage());
-            }
+            applyPageRange(body, config);
 
             JsonNode response = executePost(config.getBaseUrl() + "/ocr", body, config.getReadTimeout());
 
             List<String> pages = extractPages(response);
+            Map<Integer, String> pagesMap = extractPagesMap(response);
             String fullText = pages.stream().collect(Collectors.joining("\n\n"));
             int totalWordCount = fullText.isBlank() ? 0 : fullText.split("\\s+").length;
-            int tokensUsed = response.path("usage").path("total_tokens").asInt(0);
+            int pagesProcessed = usagePages(response);
             long processingTimeMs = System.currentTimeMillis() - startTime;
 
-            return new ProcessBatchResult(fullText, pages, pages.size(), totalWordCount, tokensUsed, processingTimeMs);
+            return new ProcessBatchResult(fullText, pages, pagesMap, pages.size(),
+                    totalWordCount, pagesProcessed, processingTimeMs);
         });
+    }
+
+    /**
+     * Apply the optional page-range filter to the OCR request body.
+     * Users pass 1-indexed page numbers (natural language: "page 1, 2, 3..."),
+     * but Mistral's API is 0-indexed. Converts and filters invalid values.
+     *
+     * Both inputs must be set together to take effect. If only one is provided,
+     * the entire document is processed — but a warning is logged so the user
+     * sees that their partial input was ignored. When both are null (default),
+     * the whole document is processed silently — backwards-compatible with
+     * older .proc files that do not set these inputs.
+     */
+    private void applyPageRange(ObjectNode body, MistralOcrConfiguration config) throws MistralOcrException {
+        Integer start = config.getStartPage();
+        Integer end = config.getEndPage();
+        if (start == null && end == null) {
+            return;
+        }
+        if (start == null || end == null) {
+            throw new MistralOcrException(
+                    "startPage and endPage must be set together (got startPage=" + start
+                            + ", endPage=" + end + "). Leave both blank to process the entire document.");
+        }
+        if (start < 1 || end < start) {
+            throw new MistralOcrException(
+                    "Invalid page range startPage=" + start + ", endPage=" + end
+                            + ". Pages are 1-indexed and endPage must be >= startPage.");
+        }
+        ArrayNode pagesArray = body.putArray("pages");
+        for (int i = start; i <= end; i++) {
+            pagesArray.add(i - 1);
+        }
     }
 
     // === Private helpers ===
@@ -192,102 +250,46 @@ public class MistralOcrClient {
         body.put("model", config.getModel());
 
         ObjectNode document = objectMapper.createObjectNode();
+        String mimeType = config.getMimeType() != null ? config.getMimeType() : "application/pdf";
+        boolean isImage = mimeType.startsWith("image/");
+        String typeField = isImage ? "image_url" : "document_url";
+
         if (config.getDocumentBase64() != null && !config.getDocumentBase64().isBlank()) {
-            document.put("type", "base64");
-            document.put("data", config.getDocumentBase64());
-            document.put("mime_type", config.getMimeType());
+            document.put("type", typeField);
+            document.put(typeField, "data:" + mimeType + ";base64," + config.getDocumentBase64());
         } else if (config.getImageUrl() != null && !config.getImageUrl().isBlank()) {
-            document.put("type", "url");
-            document.put("url", config.getImageUrl());
+            document.put("type", typeField);
+            document.put(typeField, config.getImageUrl());
         }
         body.set("document", document);
         return body;
     }
 
-    private ObjectNode buildChatCompletionBody(MistralOcrConfiguration config, String prompt, boolean jsonMode) {
-        ObjectNode body = objectMapper.createObjectNode();
-        // Use pixtral-large-latest for vision tasks by default
-        String chatModel = config.getModel().contains("ocr") ? "pixtral-large-latest" : config.getModel();
-        body.put("model", chatModel);
-
-        ArrayNode messages = body.putArray("messages");
-        ObjectNode userMessage = messages.addObject();
-        userMessage.put("role", "user");
-
-        ArrayNode contentArray = userMessage.putArray("content");
-
-        // Add image content
-        ObjectNode imageContent = contentArray.addObject();
-        imageContent.put("type", "image_url");
-        ObjectNode imageUrl = imageContent.putObject("image_url");
-        if (config.getDocumentBase64() != null && !config.getDocumentBase64().isBlank()) {
-            String dataUri = "data:" + config.getMimeType() + ";base64," + config.getDocumentBase64();
-            imageUrl.put("url", dataUri);
-        } else if (config.getImageUrl() != null && !config.getImageUrl().isBlank()) {
-            imageUrl.put("url", config.getImageUrl());
-        }
-
-        // Add text prompt
-        ObjectNode textContent = contentArray.addObject();
-        textContent.put("type", "text");
-        textContent.put("text", prompt);
-
-        if (jsonMode) {
-            ObjectNode responseFormat = body.putObject("response_format");
-            responseFormat.put("type", "json_object");
-        }
-
-        return body;
+    private ObjectNode buildJsonSchemaFormat(String name, JsonNode schema) {
+        ObjectNode format = objectMapper.createObjectNode();
+        format.put("type", "json_schema");
+        ObjectNode jsonSchema = format.putObject("json_schema");
+        jsonSchema.put("name", name);
+        jsonSchema.set("schema", schema);
+        jsonSchema.put("strict", false);
+        return format;
     }
 
-    private String buildFieldExtractionPrompt(MistralOcrConfiguration config) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Extract the following fields from this document and return them as a JSON object.\n\n");
-        sb.append("Fields schema:\n").append(config.getFieldsSchema()).append("\n\n");
-        if (config.getExtractionPrompt() != null && !config.getExtractionPrompt().isBlank()) {
-            sb.append("Additional instructions:\n").append(config.getExtractionPrompt()).append("\n\n");
+    private JsonNode parseOrWrapSchema(String raw) {
+        if (raw == null || raw.isBlank()) {
+            ObjectNode empty = objectMapper.createObjectNode();
+            empty.put("type", "object");
+            return empty;
         }
-        if (config.isStrictMode()) {
-            sb.append("IMPORTANT: Only return fields that are explicitly present in the document. ");
-            sb.append("Set missing fields to null. Do not infer or guess values.\n\n");
+        try {
+            return objectMapper.readTree(raw);
+        } catch (Exception e) {
+            log.warn("fieldsSchema is not valid JSON; sending a permissive fallback schema. Raw value: {}", raw);
+            ObjectNode fallback = objectMapper.createObjectNode();
+            fallback.put("type", "object");
+            fallback.put("additionalProperties", true);
+            return fallback;
         }
-        sb.append("Return ONLY valid JSON, no markdown formatting.");
-        return sb.toString();
-    }
-
-    private String buildClassificationPrompt(MistralOcrConfiguration config) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Classify this document into one of the following types:\n");
-        sb.append(config.getDocumentTypes()).append("\n\n");
-        sb.append("Return a JSON object with the following fields:\n");
-        sb.append("- \"document_type\": the classified type (must be one of the types listed above)\n");
-        sb.append("- \"confidence\": a number between 0 and 1 indicating confidence\n");
-        sb.append("- \"scores\": an object mapping each document type to its score\n");
-        if (config.isIncludeReasoning()) {
-            sb.append("- \"reasoning\": a brief explanation of why this classification was chosen\n");
-        }
-        sb.append("\nReturn ONLY valid JSON, no markdown formatting.");
-        return sb.toString();
-    }
-
-    private String buildTableExtractionPrompt(MistralOcrConfiguration config) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Extract table data from this document");
-        if (config.getPageNumber() > 1) {
-            sb.append(" (focus on page ").append(config.getPageNumber()).append(")");
-        }
-        sb.append(".\n\n");
-        if (config.getColumnHeaders() != null && !config.getColumnHeaders().isBlank()) {
-            sb.append("Expected column headers: ").append(config.getColumnHeaders()).append("\n\n");
-        }
-        if (config.getTableHint() != null && !config.getTableHint().isBlank()) {
-            sb.append("Hint: ").append(config.getTableHint()).append("\n\n");
-        }
-        sb.append("Return a JSON object with:\n");
-        sb.append("- \"headers\": array of column header strings\n");
-        sb.append("- \"rows\": array of objects where each key is a header and value is the cell content\n");
-        sb.append("\nReturn ONLY valid JSON, no markdown formatting.");
-        return sb.toString();
     }
 
     private JsonNode executePost(String url, ObjectNode body, int readTimeout) throws MistralOcrException {
@@ -335,11 +337,32 @@ public class MistralOcrClient {
         return pages;
     }
 
-    private String extractChatContent(JsonNode response) throws MistralOcrException {
-        JsonNode choices = response.path("choices");
-        if (!choices.isArray() || choices.isEmpty()) {
-            throw new MistralOcrException("No choices in Mistral API response");
+    /**
+     * Build a 1-indexed page-number -> markdown map from the OCR response.
+     * Uses the "index" field of each page (which Mistral emits 0-indexed) and
+     * shifts it by +1 so downstream .proc scripts can iterate in human terms
+     * (page 1, 2, 3 ...). Preserves insertion order.
+     */
+    private java.util.Map<Integer, String> extractPagesMap(JsonNode response) {
+        java.util.Map<Integer, String> map = new java.util.LinkedHashMap<>();
+        JsonNode pagesNode = response.path("pages");
+        if (pagesNode.isArray()) {
+            int fallback = 0;
+            for (JsonNode page : pagesNode) {
+                int idx0 = page.path("index").asInt(-1);
+                int oneIndexed = (idx0 >= 0) ? idx0 + 1 : ++fallback;
+                map.put(oneIndexed, page.path("markdown").asText(""));
+            }
         }
-        return choices.get(0).path("message").path("content").asText("");
+        return map;
+    }
+
+    /** The OCR endpoint reports usage under "usage_info.pages_processed". */
+    private int usagePages(JsonNode response) {
+        JsonNode usageInfo = response.path("usage_info");
+        if (!usageInfo.isMissingNode()) {
+            return usageInfo.path("pages_processed").asInt(0);
+        }
+        return response.path("usage").path("total_tokens").asInt(0);
     }
 }

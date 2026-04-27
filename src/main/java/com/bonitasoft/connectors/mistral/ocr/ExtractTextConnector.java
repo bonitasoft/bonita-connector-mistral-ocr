@@ -19,11 +19,14 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
     static final String INPUT_MIME_TYPE = "mimeType";
     static final String INPUT_INCLUDE_PAGE_SEGMENTATION = "includePageSegmentation";
     static final String INPUT_LANGUAGE = "language";
+    static final String INPUT_START_PAGE = "startPage";
+    static final String INPUT_END_PAGE = "endPage";
 
     static final String OUTPUT_EXTRACTED_TEXT = "extractedText";
     static final String OUTPUT_PAGES = "pages";
+    static final String OUTPUT_PAGES_MAP = "pagesMap";
     static final String OUTPUT_PAGE_COUNT = "pageCount";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
 
     @Override
     protected MistralOcrConfiguration buildConfiguration() {
@@ -38,6 +41,8 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
                 .mimeType(readStringInput(INPUT_MIME_TYPE, "application/pdf"))
                 .includePageSegmentation(readBooleanInput(INPUT_INCLUDE_PAGE_SEGMENTATION, true))
                 .language(readStringInput(INPUT_LANGUAGE))
+                .startPage(readOptionalInteger(INPUT_START_PAGE))
+                .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
     }
 
@@ -51,13 +56,23 @@ public class ExtractTextConnector extends AbstractMistralOcrConnector {
     }
 
     @Override
+    protected void initializeOutputs() {
+        setOutputParameter(OUTPUT_EXTRACTED_TEXT, "");
+        setOutputParameter(OUTPUT_PAGES, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGE_COUNT, 0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
+    }
+
+    @Override
     protected void doExecute() throws MistralOcrException {
         log.info("Executing Extract Text connector");
         ExtractTextResult result = client.extractText(configuration);
         setOutputParameter(OUTPUT_EXTRACTED_TEXT, result.extractedText());
         setOutputParameter(OUTPUT_PAGES, result.pages());
+        setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
         setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         log.info("Extract Text connector executed successfully ({} pages)", result.pageCount());
     }
 }

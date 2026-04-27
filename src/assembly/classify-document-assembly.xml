@@ -27,7 +27,7 @@
             <outputDirectory>classpath</outputDirectory>
             <directory>${basedir}/target</directory>
             <includes>
-                <include>*:jar</include>
+                <include>*.jar</include>
             </includes>
         </fileSet>
     </fileSets>

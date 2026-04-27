@@ -20,12 +20,17 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
     static final String INPUT_FIELDS_SCHEMA = "fieldsSchema";
     static final String INPUT_EXTRACTION_PROMPT = "extractionPrompt";
     static final String INPUT_STRICT_MODE = "strictMode";
+    static final String INPUT_START_PAGE = "startPage";
+    static final String INPUT_END_PAGE = "endPage";
 
     static final String OUTPUT_EXTRACTED_FIELDS = "extractedFields";
     static final String OUTPUT_EXTRACTED_FIELDS_MAP = "extractedFieldsMap";
+    static final String OUTPUT_PAGES = "pages";
+    static final String OUTPUT_PAGES_MAP = "pagesMap";
+    static final String OUTPUT_PAGE_COUNT = "pageCount";
     static final String OUTPUT_FIELD_COUNT = "fieldCount";
     static final String OUTPUT_CONFIDENCE = "confidence";
-    static final String OUTPUT_TOKENS_USED = "tokensUsed";
+    static final String OUTPUT_PAGES_PROCESSED = "pagesProcessed";
 
     @Override
     protected MistralOcrConfiguration buildConfiguration() {
@@ -41,6 +46,8 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
                 .fieldsSchema(readStringInput(INPUT_FIELDS_SCHEMA))
                 .extractionPrompt(readStringInput(INPUT_EXTRACTION_PROMPT))
                 .strictMode(readBooleanInput(INPUT_STRICT_MODE, false))
+                .startPage(readOptionalInteger(INPUT_START_PAGE))
+                .endPage(readOptionalInteger(INPUT_END_PAGE))
                 .build();
     }
 
@@ -57,14 +64,29 @@ public class ExtractFieldsConnector extends AbstractMistralOcrConnector {
     }
 
     @Override
+    protected void initializeOutputs() {
+        setOutputParameter(OUTPUT_EXTRACTED_FIELDS, "");
+        setOutputParameter(OUTPUT_EXTRACTED_FIELDS_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGES, java.util.List.of());
+        setOutputParameter(OUTPUT_PAGES_MAP, java.util.Map.of());
+        setOutputParameter(OUTPUT_PAGE_COUNT, 0);
+        setOutputParameter(OUTPUT_FIELD_COUNT, 0);
+        setOutputParameter(OUTPUT_CONFIDENCE, 0.0);
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, 0);
+    }
+
+    @Override
     protected void doExecute() throws MistralOcrException {
         log.info("Executing Extract Fields connector");
         ExtractFieldsResult result = client.extractFields(configuration);
         setOutputParameter(OUTPUT_EXTRACTED_FIELDS, result.extractedFields());
         setOutputParameter(OUTPUT_EXTRACTED_FIELDS_MAP, result.extractedFieldsMap());
+        setOutputParameter(OUTPUT_PAGES, result.pages());
+        setOutputParameter(OUTPUT_PAGES_MAP, result.pagesMap());
+        setOutputParameter(OUTPUT_PAGE_COUNT, result.pageCount());
         setOutputParameter(OUTPUT_FIELD_COUNT, result.fieldCount());
         setOutputParameter(OUTPUT_CONFIDENCE, result.confidence());
-        setOutputParameter(OUTPUT_TOKENS_USED, result.tokensUsed());
+        setOutputParameter(OUTPUT_PAGES_PROCESSED, result.pagesProcessed());
         log.info("Extract Fields connector executed successfully ({} fields)", result.fieldCount());
     }
 }

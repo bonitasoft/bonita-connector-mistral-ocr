@@ -39,7 +39,10 @@ class ExtractTextConnectorTest {
         connector.validateInputParameters();
         injectMockClient();
 
-        var result = new ExtractTextResult("Hello World", List.of("Hello", "World"), 2, 100);
+        var pagesMap = new java.util.LinkedHashMap<Integer, String>();
+        pagesMap.put(1, "Hello");
+        pagesMap.put(2, "World");
+        var result = new ExtractTextResult("Hello World", List.of("Hello", "World"), pagesMap, 2, 100);
         when(mockClient.extractText(any())).thenReturn(result);
 
         connector.executeBusinessLogic();
@@ -49,7 +52,7 @@ class ExtractTextConnectorTest {
         assertThat(outputs.get("extractedText")).isEqualTo("Hello World");
         assertThat(outputs.get("pages")).isEqualTo(List.of("Hello", "World"));
         assertThat(outputs.get("pageCount")).isEqualTo(2);
-        assertThat(outputs.get("tokensUsed")).isEqualTo(100);
+        assertThat(outputs.get("pagesProcessed")).isEqualTo(100);
     }
 
     @Test

@@ -46,16 +46,17 @@ public abstract class AbstractMistralOcrConnector extends AbstractConnector {
 
     @Override
     protected void executeBusinessLogic() throws ConnectorException {
+        setOutputParameter(OUTPUT_SUCCESS, false);
+        setOutputParameter(OUTPUT_ERROR_MESSAGE, "");
+        initializeOutputs();
         try {
             doExecute();
             setOutputParameter(OUTPUT_SUCCESS, true);
         } catch (MistralOcrException e) {
             log.error("Mistral OCR connector execution failed: {}", e.getMessage(), e);
-            setOutputParameter(OUTPUT_SUCCESS, false);
             setOutputParameter(OUTPUT_ERROR_MESSAGE, e.getMessage());
         } catch (Exception e) {
             log.error("Unexpected error in Mistral OCR connector: {}", e.getMessage(), e);
-            setOutputParameter(OUTPUT_SUCCESS, false);
             String detail = e.getClass().getSimpleName() + ": " + e.getMessage();
             if (e.getCause() != null) {
                 detail += " caused by " + e.getCause().getClass().getSimpleName() + ": " + e.getCause().getMessage();
@@ -67,6 +68,14 @@ public abstract class AbstractMistralOcrConnector extends AbstractConnector {
     protected abstract void doExecute() throws MistralOcrException;
 
     protected abstract MistralOcrConfiguration buildConfiguration();
+
+    /**
+     * Pre-fill connector-specific outputs with neutral defaults so that a failing
+     * execution still produces a value for every output declared in the .def.
+     * Without this, Bonita raises SExpressionEvaluationException when a .proc
+     * maps an output that the connector never got to set.
+     */
+    protected abstract void initializeOutputs();
 
     /**
      * Validates connection parameters shared across all operations.
@@ -108,5 +117,11 @@ public abstract class AbstractMistralOcrConnector extends AbstractConnector {
     protected Long readLongInput(String name, long defaultValue) {
         Object value = getInputParameter(name);
         return value != null ? ((Number) value).longValue() : defaultValue;
+    }
+
+    /** Read an optional Integer input. Returns null when the .proc leaves it blank. */
+    protected Integer readOptionalInteger(String name) {
+        Object value = getInputParameter(name);
+        return value != null ? ((Number) value).intValue() : null;
     }
 }
